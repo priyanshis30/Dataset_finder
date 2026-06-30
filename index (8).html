@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dataset Finder — The Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171b1f;
+    --ink-2:#20262c;
+    --rule:#3c4750;
+    --paper:#ece4cf;
+    --paper-2:#f4eedd;
+    --paper-shadow:#cbbf9d;
+    --mustard:#c98a3b;
+    --mustard-deep:#8f5d22;
+    --sage:#6f9272;
+    --sage-deep:#3f5a42;
+    --rust:#a8472e;
+    --ink-text:#2a2722;
+    --paper-faint:#8a8164;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  ::selection{ background:var(--mustard); color:var(--ink); }
+
+  /* ---------- HERO / DRAWER FRONT ---------- */
+  .hero{
+    padding:5rem 1.5rem 3.5rem;
+    text-align:center;
+    border-bottom:1px solid var(--rule);
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--mustard);
+    margin-bottom:1.1rem;
+  }
+  .eyebrow::before{ content:"§ "; color:var(--paper-faint); }
+  h1.title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(2.4rem,6vw,4.6rem);
+    line-height:1.02;
+    margin:0 0 0.9rem;
+    letter-spacing:-0.01em;
+  }
+  h1.title em{
+    font-style:italic;
+    font-weight:500;
+    color:var(--mustard);
+  }
+  .sub{
+    max-width:560px;
+    margin:0 auto 2.6rem;
+    color:#b9b2a0;
+    font-size:1.02rem;
+    line-height:1.6;
+  }
+
+  /* search — styled as a brass drawer pull / label slot */
+  .search-wrap{
+    max-width:620px;
+    margin:0 auto;
+    position:relative;
+  }
+  .label-tab{
+    display:inline-block;
+    background:var(--paper);
+    color:var(--ink-text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.7rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    padding:0.3rem 0.9rem;
+    border-radius:2px 2px 0 0;
+    margin-bottom:-1px;
+    position:relative;
+    z-index:2;
+  }
+  .search-bar{
+    display:flex;
+    align-items:center;
+    gap:0.6rem;
+    background:var(--paper);
+    border:1px solid var(--paper-shadow);
+    border-radius:3px;
+    padding:0.85rem 1.1rem;
+    box-shadow:0 14px 30px -14px rgba(0,0,0,0.6);
+  }
+  .search-bar svg{ flex:none; color:var(--mustard-deep); }
+  .search-bar input{
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.95rem;
+    color:var(--ink-text);
+  }
+  .search-bar input::placeholder{ color:#9c937a; }
+  .search-bar button{
+    border:none;
+    background:var(--ink-text);
+    color:var(--paper-2);
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:0.85rem;
+    padding:0.55rem 1.1rem;
+    border-radius:2px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .search-bar button:hover{ background:var(--mustard-deep); }
+
+  .quick-tags{
+    margin-top:0.9rem;
+    display:flex;
+    gap:0.5rem;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .quick-tags button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    background:transparent;
+    border:1px solid var(--rule);
+    color:#a39a85;
+    padding:0.32rem 0.7rem;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  .quick-tags button:hover{ border-color:var(--mustard); color:var(--mustard); }
+
+  /* ---------- RESULTS SECTION ---------- */
+  .drawer{
+    max-width:1080px;
+    margin:0 auto;
+    padding:3rem 1.5rem 6rem;
+  }
+  .drawer-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:0.8rem;
+    margin-bottom:1.8rem;
+    flex-wrap:wrap;
+    gap:0.6rem;
+  }
+  .drawer-head h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:1.3rem;
+    margin:0;
+    color:var(--paper);
+  }
+  .count-stamp{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.75rem;
+    color:var(--paper-faint);
+  }
+
+  .status-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.85rem;
+    color:#a39a85;
+    padding:2rem 0;
+    text-align:center;
+  }
+  .status-line.error{ color:#d98a78; }
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+    gap:1.1rem;
+  }
+
+  .card{
+    background:var(--paper);
+    color:var(--ink-text);
+    border-radius:2px;
+    padding:1.15rem 1.2rem 1.1rem;
+    position:relative;
+    border:1px solid var(--paper-shadow);
+    box-shadow:0 10px 20px -14px rgba(0,0,0,0.5);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    display:flex;
+    flex-direction:column;
+    min-height:190px;
+  }
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 18px 30px -16px rgba(0,0,0,0.65);
+  }
+  .card::before{
+    /* punch hole */
+    content:"";
+    position:absolute;
+    top:0.65rem; left:0.65rem;
+    width:9px; height:9px;
+    border-radius:50%;
+    background:var(--ink);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .card-acc{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.66rem;
+    letter-spacing:0.06em;
+    color:var(--paper-faint);
+    text-align:right;
+    margin-bottom:0.5rem;
+  }
+  .card-id{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.08rem;
+    line-height:1.25;
+    margin:0 0 0.15rem;
+    word-break:break-word;
+    padding-left:1.1rem;
+  }
+  .card-author{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    color:var(--mustard-deep);
+    padding-left:1.1rem;
+    margin-bottom:0.7rem;
+  }
+  .card-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.3rem;
+    padding-left:1.1rem;
+    margin-bottom:0.85rem;
+  }
+  .card-tags span{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.64rem;
+    background:rgba(63,90,66,0.12);
+    color:var(--sage-deep);
+    border:1px solid rgba(63,90,66,0.35);
+    padding:0.12rem 0.45rem;
+    border-radius:10px;
+  }
+  .card-stats{
+    margin-top:auto;
+    padding-left:1.1rem;
+    display:flex;
+    gap:1rem;
+    border-top:1px dashed var(--paper-shadow);
+    padding-top:0.6rem;
+  }
+  .stat{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.74rem;
+    color:var(--ink-text);
+    display:flex;
+    align-items:center;
+    gap:0.3rem;
+  }
+  .stat svg{ width:13px; height:13px; opacity:0.65; }
+  .card-link{
+    position:absolute;
+    inset:0;
+    z-index:3;
+  }
+  .card-foot-row{
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .open-mark{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.7rem;
+    color:var(--mustard-deep);
+  }
+
+  footer{
+    text-align:center;
+    padding:2rem 1.5rem 3rem;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;
+    color:var(--paper-faint);
+    border-top:1px solid var(--rule);
+  }
+
+  @media (max-width:480px){
+    .hero{padding:3.5rem 1.2rem 2.5rem;}
+    .cards{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="eyebrow">vol. I — machine-learning collection</div>
+  <h1 class="title">AI Dataset <em>Finder</em></h1>
+  <p class="sub">A card catalog for the open datasets behind modern AI — pulled live from the Hugging Face Hub. Search by name, task, or domain to pull a card.</p>
+
+  <div class="search-wrap">
+    <span class="label-tab" id="labelTab">search the drawer</span>
+    <div class="search-bar">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="imdb, medical imaging, code, speech…" autocomplete="off">
+      <button id="searchBtn">Pull card</button>
+    </div>
+    <div class="quick-tags">
+      <button data-q="text-classification">text classification</button>
+      <button data-q="image">image</button>
+      <button data-q="speech">speech</button>
+      <button data-q="code">code</button>
+      <button data-q="medical">medical</button>
+      <button data-q="translation">translation</button>
+    </div>
+  </div>
+</section>
+
+<section class="drawer">
+  <div class="drawer-head">
+    <h2 id="resultsTitle">Most consulted entries</h2>
+    <span class="count-stamp" id="resultCount"></span>
+  </div>
+  <div id="statusLine" class="status-line">Opening the drawer…</div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<footer>
+  Index drawn from huggingface.co/api/datasets · entries link out to the original record · not affiliated with Hugging Face
+</footer>
+
+<script>
+const cardsEl = document.getElementById('cards');
+const statusEl = document.getElementById('statusLine');
+const titleEl = document.getElementById('resultsTitle');
+const countEl = document.getElementById('resultCount');
+const input = document.getElementById('searchInput');
+const labelTab = document.getElementById('labelTab');
+
+function fmt(n){
+  if(n === undefined || n === null) return '0';
+  if(n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + 'M';
+  if(n >= 1000) return (n/1000).toFixed(1).replace('.0','') + 'K';
+  return String(n);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function accessionFor(id, index){
+  let h = 0;
+  for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) >>> 0; }
+  const num = (h % 9000) + 1000 + index;
+  return 'AC.' + num;
+}
+
+function renderCards(list){
+  cardsEl.innerHTML = '';
+  list.forEach((d, i) => {
+    const id = d.id || d.modelId || 'unknown/unknown';
+    const parts = id.split('/');
+    const author = parts.length > 1 ? parts[0] : 'community';
+    const name = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
+    const tags = (d.tags || []).filter(t => !t.includes(':')).slice(0,3);
+    const url = 'https://huggingface.co/datasets/' + id;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <a class="card-link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${escapeHtml(id)} on Hugging Face"></a>
+      <div class="card-acc">${accessionFor(id, i)}</div>
+      <div class="card-id">${escapeHtml(name)}</div>
+      <div class="card-author">by ${escapeHtml(author)}</div>
+      <div class="card-tags">${tags.map(t => `<span>${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="card-foot-row">
+        <div class="card-stats">
+          <span class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${fmt(d.downloads)}</span>
+          <span class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${fmt(d.likes)}</span>
+        </div>
+        <span class="open-mark">open ↗</span>
+      </div>
+    `;
+    cardsEl.appendChild(card);
+  });
+}
+
+const FALLBACK = [
+  {id:"stanfordnlp/imdb", downloads:842913, likes:412, tags:["text-classification","sentiment"]},
+  {id:"squad", downloads:631204, likes:389, tags:["question-answering"]},
+  {id:"glue", downloads:1204882, likes:601, tags:["text-classification","benchmark"]},
+  {id:"mnist", downloads:702144, likes:355, tags:["image-classification"]},
+  {id:"common_voice", downloads:298433, likes:512, tags:["speech","audio"]},
+  {id:"wikitext", downloads:455211, likes:288, tags:["text-generation"]},
+  {id:"bigcode/the-stack", downloads:188422, likes:701, tags:["code"]},
+  {id:"openai/gsm8k", downloads:204911, likes:455, tags:["reasoning","math"]},
+  {id:"cifar10", downloads:533021, likes:266, tags:["image-classification"]},
+  {id:"wmt/wmt19", downloads:88210, likes:142, tags:["translation"]},
+  {id:"go_emotions", downloads:91234, likes:178, tags:["text-classification","emotion"]},
+  {id:"medical_dialog", downloads:42110, likes:96, tags:["medical","dialogue"]}
+];
+
+function matchesFallback(query){
+  if(!query) return FALLBACK;
+  const q = query.toLowerCase();
+  const matched = FALLBACK.filter(d =>
+    d.id.toLowerCase().includes(q) || d.tags.some(t => t.toLowerCase().includes(q))
+  );
+  return matched.length ? matched : FALLBACK;
+}
+
+async function loadDatasets(query){
+  statusEl.style.display = 'block';
+  statusEl.className = 'status-line';
+  statusEl.textContent = query ? `Thumbing through entries for “${query}”…` : 'Opening the drawer…';
+  cardsEl.innerHTML = '';
+  countEl.textContent = '';
+  titleEl.textContent = query ? `Entries matching “${query}”` : 'Most consulted entries';
+
+  const params = new URLSearchParams({
+    limit: '24',
+    sort: 'downloads',
+    direction: '-1'
+  });
+  if(query) params.set('search', query);
+
+  try{
+    const res = await fetch('https://huggingface.co/api/datasets?' + params.toString());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(!Array.isArray(data) || data.length === 0){
+      statusEl.className = 'status-line';
+      statusEl.textContent = 'No entries found for that search — try a broader term.';
+      return;
+    }
+    statusEl.style.display = 'none';
+    countEl.textContent = data.length + ' card' + (data.length === 1 ? '' : 's') + ' pulled';
+    renderCards(data);
+  }catch(err){
+    const list = matchesFallback(query);
+    statusEl.style.display = 'block';
+    statusEl.className = 'status-line error';
+    statusEl.textContent = 'Live index unreachable from this view — showing a bundled sample instead.';
+    countEl.textContent = list.length + ' sample card' + (list.length === 1 ? '' : 's');
+    renderCards(list);
+  }
+}
+
+document.getElementById('searchBtn').addEventListener('click', () => {
+  loadDatasets(input.value.trim());
+  labelTab.textContent = input.value.trim() ? 'search: "' + input.value.trim() + '"' : 'search the drawer';
+});
+input.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    loadDatasets(input.value.trim());
+    labelTab.textContent = input.value.trim() ? 'search: "' + input.value.trim() + '"' : 'search the drawer';
+  }
+});
+document.querySelectorAll('.quick-tags button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    input.value = btn.dataset.q;
+    labelTab.textContent = 'search: "' + btn.dataset.q + '"';
+    loadDatasets(btn.dataset.q);
+  });
+});
+
+loadDatasets('');
+</script>
+
+</body>
+</html>

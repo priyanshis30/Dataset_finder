@@ -230,7 +230,7 @@
   }
   .card-tags .none{ font-family:'JetBrains Mono',monospace; font-size:0.64rem; color:var(--paper-faint); font-style:italic; padding:0.12rem 0; }
  
-  .card-actions{ display:flex; gap:0.8rem; flex-wrap:wrap; row-gap:0.35rem; padding-left:1.1rem; margin-bottom:0.6rem; }
+  .card-actions{ display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap; row-gap:0.4rem; padding-left:1.1rem; margin-bottom:0.6rem; }
   .card-actions button{
     position:relative; z-index:5;
     font-family:'JetBrains Mono',monospace; font-size:0.68rem; background:none; border:none; color:var(--mustard-deep);
@@ -238,6 +238,15 @@
   }
   .card-actions button:hover{ color:var(--rust); }
   .card-actions button[aria-pressed="true"]{ color:var(--rust); font-weight:600; }
+  .basket-btn{
+    display:inline-flex; align-items:center; gap:0.3rem;
+    background:var(--paper-2) !important; border:1px solid var(--mustard-deep) !important;
+    color:var(--mustard-deep) !important; padding:0.28rem 0.65rem !important; border-radius:14px;
+    text-decoration:none !important; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; font-size:0.64rem !important;
+  }
+  .basket-btn svg{ width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; }
+  .basket-btn:hover{ background:var(--mustard) !important; border-color:var(--mustard) !important; color:var(--ink) !important; }
+  .basket-btn[aria-pressed="true"]{ background:var(--mustard-deep) !important; border-color:var(--mustard-deep) !important; color:var(--paper-2) !important; }
  
   .card-fav{
     position:absolute; top:0.5rem; right:0.5rem; z-index:6;
@@ -958,6 +967,7 @@ const compareTableWrap = document.getElementById('compareTableWrap');
  
 const toast = document.getElementById('toast');
  
+const librarianGreeting = document.getElementById('librarianGreeting');
 const librarianInput = document.getElementById('librarianInput');
 const librarianStatus = document.getElementById('librarianStatus');
 const librarianResults = document.getElementById('librarianResults');
@@ -1198,10 +1208,18 @@ function recordHistory(d){
   if(document.getElementById('view-history').classList.contains('active')) renderHistory();
 }
 function syncCardButtons(id){
-  document.querySelectorAll(`[data-fav-id="${CSS.escape(id)}"]`).forEach(b => b.setAttribute('aria-pressed', String(!!favorites[id])));
+  const isFav = !!favorites[id];
+  document.querySelectorAll(`[data-fav-id="${CSS.escape(id)}"]`).forEach(b => {
+    b.setAttribute('aria-pressed', String(isFav));
+    b.title = isFav ? 'Remove from favorites' : 'Save to favorites';
+  });
+  const inBasket = !!basket[id];
   document.querySelectorAll(`[data-basket-id="${CSS.escape(id)}"]`).forEach(b => {
-    b.setAttribute('aria-pressed', String(!!basket[id]));
-    b.textContent = basket[id] ? '− basket' : '+ basket';
+    b.setAttribute('aria-pressed', String(inBasket));
+    b.title = inBasket ? 'Remove from basket' : 'Add to export basket';
+    const label = b.querySelector('[data-basket-label]');
+    if(label) label.textContent = inBasket ? 'in basket' : 'add to basket';
+    else b.textContent = inBasket ? '− basket' : '+ basket';
   });
 }
 function refreshCounts(){
@@ -1512,7 +1530,7 @@ function cardNode(d, i, opts){
   card.className = 'card';
   card.dataset.id = id;
   card.innerHTML = `
-    <button type="button" class="card-fav" data-fav-id="${escapeHtml(id)}" aria-pressed="${isFav}" aria-label="Toggle favorite for ${escapeHtml(id)}">
+    <button type="button" class="card-fav" data-fav-id="${escapeHtml(id)}" aria-pressed="${isFav}" aria-label="Toggle favorite for ${escapeHtml(id)}" title="${isFav ? 'Remove from favorites' : 'Save to favorites'}">
       <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.7-4.3 4.1 1.1 5.9L12 16.7 6.7 19.6l1.1-5.9L3.5 9.6l5.9-.7L12 3.5Z"/></svg>
     </button>
     <a class="card-link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${escapeHtml(id)} on Hugging Face"></a>
@@ -1524,7 +1542,10 @@ function cardNode(d, i, opts){
       ${badges.length ? `<div class="badge-row">${badges.map(b => `<span>${b.e} ${b.l}</span>`).join('')}</div>` : ''}
       <div class="card-tags">${tags.length ? tags.map(t => `<span>${escapeHtml(t)}</span>`).join('') : '<span class="none">untagged</span>'}</div>
       <div class="card-actions">
-        <button type="button" data-basket-id="${escapeHtml(id)}" aria-pressed="${inBasket}">${inBasket ? '− basket' : '+ basket'}</button>
+        <button type="button" class="basket-btn" data-basket-id="${escapeHtml(id)}" aria-pressed="${inBasket}" title="${inBasket ? 'Remove from basket' : 'Add to export basket'}">
+          <svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11a1.5 1.5 0 0 1-1.5 1.3H7a1.5 1.5 0 0 1-1.5-1.3L4 8Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+          <span data-basket-label>${inBasket ? 'in basket' : 'add to basket'}</span>
+        </button>
         <button type="button" data-cite-id="${escapeHtml(id)}">cite</button>
         <button type="button" data-compare-id="${escapeHtml(id)}" aria-pressed="${inCompare}">${inCompare ? '− compare' : '+ compare'}</button>
         <button type="button" data-flip-id="${escapeHtml(id)}">details ⇄</button>
@@ -1686,20 +1707,43 @@ function matchesFallback(query){
    NATURAL LANGUAGE QUERY PARSING
    ============================================================ */
 const NL_MODALITY_MAP = {
-  image: ['image','images','photo','photos','picture','pictures','vision'],
-  audio: ['audio','speech','voice','sound'],
-  video: ['video','videos'],
-  tabular: ['tabular','csv','spreadsheet','table'],
-  text: ['text','nlp']
+  image: ['image','images','photo','photos','picture','pictures','vision','visual'],
+  audio: ['audio','speech','voice','sound','acoustic'],
+  video: ['video','videos','footage'],
+  tabular: ['tabular','csv','spreadsheet','table','structured data'],
+  text: ['text','nlp','language','corpus','corpora']
 };
 const NL_TASK_MAP = {
-  'text-classification': ['sentiment analysis','sentiment','fake news','fake news detection','spam detection'],
-  'automatic-speech-recognition': ['speech recognition','asr','transcription'],
+  'text-classification': ['sentiment analysis','sentiment','fake news','fake news detection','spam detection','topic classification'],
+  'automatic-speech-recognition': ['speech recognition','asr','transcription','speech to text'],
+  'text-to-speech': ['text to speech','tts','voice synthesis','speech synthesis'],
   'translation': ['translation','multilingual translation','machine translation'],
-  'image-to-text': ['ocr','optical character recognition'],
-  'image-segmentation': ['segmentation','image segmentation','medical image segmentation'],
-  'question-answering': ['question answering','chatbot','dialogue','conversational'],
-  'object-detection': ['object detection']
+  'image-to-text': ['ocr','optical character recognition','text extraction from images'],
+  'image-segmentation': ['segmentation','image segmentation','medical image segmentation','semantic segmentation'],
+  'image-classification': ['image classification','photo classification'],
+  'object-detection': ['object detection','bounding box'],
+  'question-answering': ['question answering','chatbot','dialogue','conversational','virtual assistant'],
+  'summarization': ['summarization','summarize','summary','tldr'],
+  'token-classification': ['named entity recognition','ner','entity recognition','part of speech'],
+  'text-generation': ['text generation','story generation','creative writing','language modeling'],
+  'time-series-forecasting': ['time series','forecasting','sensor data','iot data'],
+  'robotics': ['robotics','robot','manipulation','navigation dataset','reinforcement learning']
+};
+const TASK_DESCRIPTIONS = {
+  'text-classification': 'sorting text into predefined categories, such as sentiment or topic',
+  'automatic-speech-recognition': 'converting spoken audio into written text',
+  'text-to-speech': 'converting written text into spoken audio',
+  'translation': 'converting text from one language into another',
+  'image-to-text': 'reading text out of images — often called OCR',
+  'image-segmentation': 'labeling every pixel of an image by what it belongs to',
+  'image-classification': 'sorting images into predefined categories',
+  'object-detection': 'locating and labeling objects within an image',
+  'question-answering': 'answering questions — the backbone of most chatbots and assistants',
+  'summarization': 'condensing longer text down to its key points',
+  'token-classification': 'labeling individual words, such as names or dates, within text',
+  'text-generation': 'producing new text, for chat, completion, or creative writing',
+  'time-series-forecasting': 'predicting future values from historical sequences',
+  'robotics': 'training or evaluating robotic control and perception'
 };
 function parseNaturalQuery(raw){
   const q = raw.toLowerCase();
@@ -1947,6 +1991,16 @@ function explainMatch(d, parsed, originalQuery){
   const base = `“${displayNameFor(d.id)}”`;
   return reasons.length ? `${base} — ${reasons.join('; ')}.` : `${base} — closest match found in the catalog for “${originalQuery}”.`;
 }
+function taskDefinitionsFor(parsed){
+  const defs = [];
+  parsed.facets.forEach(f => {
+    if(f.startsWith('task_categories:')){
+      const key = f.split(':')[1];
+      if(TASK_DESCRIPTIONS[key]) defs.push(`${key.replace(/-/g,' ')} is about ${TASK_DESCRIPTIONS[key]}`);
+    }
+  });
+  return defs;
+}
 async function askLibrarian(raw){
   const q = raw.trim();
   if(!q) return;
@@ -1955,6 +2009,14 @@ async function askLibrarian(raw){
   librarianStatus.textContent = 'Checking the shelves…';
   librarianResults.innerHTML = '';
   const parsed = parseNaturalQuery(q);
+ 
+  const introBits = [];
+  const defs = taskDefinitionsFor(parsed);
+  if(defs.length) introBits.push(defs.join('; ') + '.');
+  if(parsed.adv.beginner) introBits.push('Since it sounds like you\u2019re starting out, I\u2019ve leaned toward widely-used, well-documented sets.');
+  if(parsed.adv.multilingual) introBits.push('I\u2019ve kept an eye out for sets that span more than one language.');
+  librarianGreeting.innerHTML = (introBits.length ? introBits.join(' ') + ' ' : '') + `Here\u2019s what I found on the shelves for \u201c${escapeHtml(q)}\u201d:`;
+ 
   const params = new URLSearchParams({ limit:'8', sort:'downloads', direction:'-1' });
   parsed.facets.forEach(f => params.append('filter', f));
   if(parsed.facets.size === 0 && parsed.searchTerm) params.set('search', parsed.searchTerm);
@@ -1967,8 +2029,16 @@ async function askLibrarian(raw){
       const res2 = await fetchWithTimeout('https://huggingface.co/api/datasets?' + params2.toString(), 9000);
       if(res2.ok) data = await res2.json();
     }
+    if((!data || !data.length) && parsed.facets.size){
+      // facets + search term both came up empty — retry on facets alone for broader recall
+      const params3 = new URLSearchParams({ limit:'8', sort:'downloads', direction:'-1' });
+      parsed.facets.forEach(f => params3.append('filter', f));
+      const res3 = await fetchWithTimeout('https://huggingface.co/api/datasets?' + params3.toString(), 9000);
+      if(res3.ok) data = await res3.json();
+    }
     if(!data || !data.length){
-      librarianStatus.textContent = 'I couldn\u2019t find a good match for that — try rephrasing, or browse the catalog directly.';
+      librarianGreeting.textContent = 'Good day. Tell me what you\u2019re building, and I\u2019ll pull a few cards that might suit.';
+      librarianStatus.textContent = 'I couldn\u2019t find a good match for that — try a plainer phrase like "image classification" or "medical text", or browse the catalog directly.';
       return;
     }
     librarianStatus.style.display = 'none';
